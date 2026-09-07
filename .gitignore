@@ -1,0 +1,7 @@
+# Dados reais não vão para o repositório público.
+# As tarefas citam pessoas do time (valores, bônus, desligamento)
+# e a lista de acessos tem e-mails. Tudo isso já está no Supabase,
+# atrás de login. Estes arquivos ficam só na máquina.
+sql/02-dados.sql
+sql/03-pessoas.sql
+sql/tarefas-import.csv

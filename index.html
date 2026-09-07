@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Painel Frontfutur</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%E2%9A%96%EF%B8%8F</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Roboto:wght@300;400;500&family=Roboto+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+
+<div class="gate" id="gate" hidden>
+  <div class="gate-card">
+    <div id="gateBody">
+      <span class="gate-mark">Frontfutur</span>
+      <h1>Painel interno</h1>
+      <p>Entre com o e-mail e a senha que você recebeu.</p>
+    </div>
+    <form id="loginForm" novalidate>
+      <label for="gEmail">E-mail<input id="gEmail" type="email" autocomplete="username" required></label>
+      <label for="gPass">Senha<input id="gPass" type="password" autocomplete="current-password" required></label>
+      <button class="btn-primary" type="submit" id="gBtn">Entrar</button>
+      <p class="gate-err" id="gErr" hidden></p>
+    </form>
+  </div>
+</div>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand">
+      <span class="mark">Frontfutur</span>
+      <span class="sub">Painel interno</span>
+    </div>
+    <button class="who" id="whoBtn">Você: <b id="whoName">—</b></button>
+  </div>
+</header>
+
+<main id="view">
+  <div class="hub">
+    <header class="doc-head">
+      <p class="kicker" id="hoje">Painel interno</p>
+      <h1>Onde o trabalho está</h1>
+      <p class="lede">Um lugar só para as coisas que a Frontfutur precisa acompanhar por fora dos projetos.
+      Cada quadro abaixo é compartilhado com quem precisa dele — e só com quem precisa dele.</p>
+    </header>
+    <div class="hub-grid" id="mods"></div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="auth.js"></script>
+<script>
+(function(){
+"use strict";
+
+/* Cada módulo novo do painel entra aqui e vira um cartão.
+   `id` precisa bater com o que está na coluna `modulos` da tabela pessoas. */
+const MODULOS=[
+  {id:"juridico",    code:"01", nome:"Jurídico",         href:"juridico.html", cor:"var(--f1)",
+   desc:"Contratos, NDAs, aditivos e societário. Quadro compartilhado com a assessoria jurídica."},
+  {id:"prestadores", code:"02", nome:"Prestadores",      href:"",              cor:"var(--f3)",
+   desc:"Quem está ativo, contrato e NDA de cada um, valor vigente e último aditivo."},
+  {id:"propostas",   code:"03", nome:"Propostas e SOW",  href:"",              cor:"var(--f2)",
+   desc:"Proposta por cliente e o SOW que saiu de cada uma, com o que foi assinado."}
+];
+
+const $=s=>document.querySelector(s);
+
+$("#whoBtn").addEventListener("click",()=>{ if(confirm("Sair da conta?"))FF.signOut(); });
+
+$("#hoje").textContent="Painel interno · "+
+  new Date().toLocaleDateString("pt-BR",{day:"2-digit",month:"long",year:"numeric"});
+
+function pintar(meus,contagem){
+  const host=$("#mods"); host.innerHTML="";
+  MODULOS.forEach(m=>{
+    const liberado=meus.indexOf(m.id)>=0;
+    if(!liberado&&m.href)return;
+    const pronto=Boolean(m.href)&&liberado;
+    const n=pronto?document.createElement("a"):document.createElement("div");
+    n.className="mod"+(pronto?"":" soon");
+    if(pronto)n.href=m.href;
+    n.innerHTML='<span class="code" style="--fc:'+m.cor+'">'+m.code+"</span>"+
+      "<h3>"+m.nome+"</h3><p>"+m.desc+"</p>"+
+      '<span class="n">'+(pronto?(contagem[m.id]||"abrir"):"em breve")+"</span>";
+    host.appendChild(n);
+  });
+}
+
+FF.start(null, async function(){
+  const meus=(FF.pessoa&&FF.pessoa.modulos)||[];
+  const contagem={};
+  if(meus.indexOf("juridico")>=0){
+    const {data}=await FF.sb.from("tarefas").select("status");
+    if(data){
+      const feitas=data.filter(t=>t.status==="done").length;
+      contagem.juridico=feitas+" de "+data.length+" concluídas";
+    }
+  }
+  pintar(meus,contagem);
+});
+})();
+</script>
+</body>
+</html>
