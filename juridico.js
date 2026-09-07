@@ -24,7 +24,7 @@ const S=Object.fromEntries(STATUSES.map(s=>[s.id,s]));
 const MAX_FILE=45*1024*1024;
 
 let sb=null, me="", ready=false, view="lista", openId=null, CODES={};
-let tasks=new Map(), notes=[], files=[];
+let tasks=new Map(), notes=[], files=[], subs=[];
 let filter={q:"",frentes:new Set(),blocked:false};
 
 /* ---------------------------------------------------------------- utils */
@@ -48,7 +48,8 @@ const ICON={
   note:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"><path d="M2.6 3.2h10.8v7.3H6.8L4.1 12.8v-2.3H2.6z"/></svg>',
   cal:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25"><rect x="2.4" y="3.6" width="11.2" height="9.8" rx="1.3"/><path d="M2.4 6.6h11.2M5.6 2.2v2.4M10.4 2.2v2.4"/></svg>',
   link:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"><path d="M6.6 9.4a2.6 2.6 0 0 0 3.7 0l2.1-2.1a2.6 2.6 0 0 0-3.7-3.7l-.9.9"/><path d="M9.4 6.6a2.6 2.6 0 0 0-3.7 0L3.6 8.7a2.6 2.6 0 0 0 3.7 3.7l.9-.9"/></svg>',
-  file:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"><path d="M9 2.2H4.4v11.6h7.2V4.8z"/><path d="M9 2.2v2.6h2.6"/></svg>'
+  file:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"><path d="M9 2.2H4.4v11.6h7.2V4.8z"/><path d="M9 2.2v2.6h2.6"/></svg>',
+  check:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><rect x="2.4" y="2.4" width="11.2" height="11.2" rx="2"/><path d="M5.2 8.1l2 2 3.6-4" stroke-linecap="round"/></svg>'
 };
 
 /* ------------------------------------------------- tradução banco <-> tela */
@@ -86,15 +87,17 @@ function visible(){
 }
 function notesOf(id){return notes.filter(n=>n.taskId===id).sort((a,b)=>(a.at||"").localeCompare(b.at||""));}
 function filesOf(id){return files.filter(f=>f.taskId===id).sort((a,b)=>(a.at||"").localeCompare(b.at||""));}
+function subsOf(id){return subs.filter(x=>x.taskId===id).sort((a,b)=>(a.order||0)-(b.order||0));}
 
 let reloadTimer=null;
 function scheduleReload(){clearTimeout(reloadTimer);reloadTimer=setTimeout(reload,350);}
 
 async function reload(){
-  const [a,b,c]=await Promise.all([
+  const [a,b,c,d]=await Promise.all([
     sb.from("tarefas").select("*"),
     sb.from("anotacoes").select("*"),
-    sb.from("anexos").select("*")
+    sb.from("anexos").select("*"),
+    sb.from("subtarefas").select("*")
   ]);
   if(a.error){
     banner("Não consegui ler as tarefas: "+esc(a.error.message)+". Recarregue a página.");
@@ -105,6 +108,8 @@ async function reload(){
   notes=(b.data||[]).map(r=>({id:r.id,taskId:r.tarefa_id,author:r.autor||"",text:r.texto||"",at:r.criado_em}));
   files=(c.data||[]).map(r=>({id:r.id,taskId:r.tarefa_id,kind:r.tipo==="link"?"link":"file",
     name:r.nome||"",url:r.url||"",path:r.caminho||"",size:r.tamanho||0,by:r.autor||"",at:r.criado_em}));
+  subs=(d.data||[]).map(r=>({id:r.id,taskId:r.tarefa_id,text:r.texto||"",detail:r.detalhe||"",
+    done:!!r.feita,order:Number(r.ordem)||0}));
   ready=true; render(); renderDrawer();
 }
 
@@ -142,6 +147,24 @@ async function addNote(taskId,text){
   const {error}=await sb.from("anotacoes").insert({tarefa_id:taskId,autor:me,texto:text});
   if(error){toast("Nota não salva: "+error.message);}
   reload();
+}
+async function toggleSub(id){
+  const x=subs.find(s2=>s2.id===id); if(!x)return;
+  x.done=!x.done; renderDrawer(); render();
+  const {error}=await sb.from("subtarefas").update({feita:x.done}).eq("id",id);
+  if(error){toast("Não salvou o item"); reload();}
+}
+async function addSub(taskId,text){
+  const ordens=subsOf(taskId).map(x=>x.order||0);
+  const ordem=(ordens.length?Math.max.apply(null,ordens):0)+100;
+  const {error}=await sb.from("subtarefas").insert({tarefa_id:taskId,texto:text,ordem:ordem});
+  if(error){toast("Não criou o item: "+error.message);return;}
+  await reload();
+}
+async function removeSub(id){
+  subs=subs.filter(x=>x.id!==id); renderDrawer(); render();
+  const {error}=await sb.from("subtarefas").delete().eq("id",id);
+  if(error){toast("Não apagou o item"); reload();}
 }
 async function removeNote(id){
   notes=notes.filter(n=>n.id!==id); renderDrawer(); render();
@@ -216,6 +239,7 @@ function cardEl(t){
   b.draggable=true; b.dataset.id=t.id;
   const f=F[t.frente]||FRENTES[0];
   const ns=notesOf(t.id).length, fs=filesOf(t.id).length;
+  const sub=subsOf(t.id), subFeitas=sub.filter(x=>x.done).length;
   b.innerHTML=
     '<div class="card-top"><span class="fchip" style="--fc:'+f.color+'">'+(CODES[t.id]||f.code)+" · "+esc(f.name.split(" ")[0])+"</span>"+
     (t.priority==="alta"?'<span class="prio">Alta</span>':"")+"</div>"+
@@ -223,6 +247,7 @@ function cardEl(t){
     ((t.waitingOn||"").trim()?'<div class="blocked"><div><span>Depende de</span>'+esc(t.waitingOn)+"</div></div>":"")+
     '<div class="card-meta">'+
       (t.owner?'<span class="owner">'+esc(t.owner)+"</span>":"")+
+      (sub.length?'<span class="m">'+ICON.check+subFeitas+"/"+sub.length+"</span>":"")+
       (fs?'<span class="m">'+ICON.clip+fs+"</span>":"")+
       (ns?'<span class="m">'+ICON.note+ns+"</span>":"")+
       (t.due?'<span class="m'+(isLate(t)?" late":"")+'">'+ICON.cal+fmtDate(t.due)+"</span>":"")+
@@ -345,6 +370,7 @@ function itemEl(t){
   tick.addEventListener("click",()=>saveTask(t.id,{status:t.status==="done"?"todo":"done"}));
   const main=el("div","item-main");
   const nf=filesOf(t.id).length, nn=notesOf(t.id).length;
+  const sub=subsOf(t.id), subFeitas=sub.filter(x=>x.done).length;
   main.innerHTML="<h3>"+esc(t.title)+"</h3>"+
     (t.detail?"<p>"+esc(t.detail)+"</p>":"")+
     '<div class="item-meta">'+
@@ -353,6 +379,7 @@ function itemEl(t){
       ((t.waitingOn||"").trim()&&t.status!=="done"?'<span class="tag-dep">depende de '+esc(t.waitingOn)+"</span>":"")+
       (t.priority==="alta"&&t.status!=="done"?'<span class="tag-hot">prioridade alta</span>':"")+
       (t.owner?"<span>"+esc(t.owner)+"</span>":"")+
+      (sub.length?'<span class="m">'+ICON.check+subFeitas+" de "+sub.length+"</span>":"")+
       (t.due?'<span class="m'+(isLate(t)?" late":"")+'">'+ICON.cal+fmtDate(t.due)+"</span>":"")+
       (nf?'<span class="m">'+ICON.clip+nf+"</span>":"")+
       (nn?'<span class="m">'+ICON.note+nn+"</span>":"")+
@@ -428,7 +455,8 @@ function renderDrawer(){
   if(d.contains(document.activeElement)&&d.dataset.id===openId)return;
   const t=tasks.get(openId); const f=F[t.frente]||FRENTES[0];
   d.dataset.id=openId;
-  const ns=notesOf(t.id), fs=filesOf(t.id);
+  const ns=notesOf(t.id), fs=filesOf(t.id), sb2=subsOf(t.id);
+  const sbFeitas=sb2.filter(x=>x.done).length;
 
   d.innerHTML=
   '<div class="dr-head"><span class="fchip" style="--fc:'+f.color+'">'+(CODES[t.id]||f.code)+" · "+esc(f.name)+'</span><button class="dr-close" id="drClose">Fechar</button></div>'+
@@ -446,6 +474,16 @@ function renderDrawer(){
       '<div class="field"><label for="fWait">Depende de</label><input class="inp" id="fWait" value="'+esc(t.waitingOn||"")+'" placeholder="ex.: retorno do cliente"></div>'+
     "</div>"+
     '<div class="field"><label for="fDetail">Contexto</label><textarea class="inp" id="fDetail" placeholder="O que precisa ser feito, pontos já levantados…">'+esc(t.detail||"")+"</textarea></div>"+
+
+    '<div class="dr-sec"><h4>Itens desta tarefa <em>'+(sb2.length?sbFeitas+" de "+sb2.length:"")+"</em></h4>"+
+      (sb2.length?sb2.map(x=>
+        '<div class="check'+(x.done?" feita":"")+'">'+
+        '<button class="box" data-sub="'+x.id+'" aria-pressed="'+(x.done?"true":"false")+'" aria-label="'+(x.done?"Desmarcar":"Marcar como feito")+'">'+
+        '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3.6 8.4l2.9 2.9 5.9-6"/></svg></button>'+
+        '<span class="txt"><b>'+esc(x.text)+"</b>"+(x.detail?"<span>"+esc(x.detail)+"</span>":"")+"</span>"+
+        '<button class="rm" data-delsub="'+x.id+'" title="Remover">&#10005;</button></div>').join(""):'<p class="hint">Nenhum item ainda. Use para quebrar a tarefa em pontos, sem precisar criar tarefas separadas.</p>')+
+      '<div class="subadd"><input class="inp" id="subBox" placeholder="Novo item… (Enter para salvar)"><button class="btn-ghost" id="addSub">Incluir</button></div>'+
+    "</div>"+
 
     '<div class="dr-sec"><h4>Anexos <em>'+(fs.length||"")+"</em></h4>"+
       (fs.length?fs.map(x=>
@@ -491,6 +529,14 @@ function renderDrawer(){
     const u=d.querySelector("#linkUrl").value.trim(); if(!u)return;
     addLink(t.id,d.querySelector("#linkName").value.trim(),/^https?:\/\//i.test(u)?u:"https://"+u);
   });
+  const sbx=d.querySelector("#subBox");
+  const postSub=()=>{const v=sbx.value.trim();if(!v)return;sbx.value="";addSub(t.id,v);};
+  bind("#addSub","click",postSub);
+  if(sbx)sbx.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();postSub();}});
+  d.querySelectorAll("[data-sub]").forEach(b=>b.addEventListener("click",()=>toggleSub(b.dataset.sub)));
+  d.querySelectorAll("[data-delsub]").forEach(b=>b.addEventListener("click",()=>{
+    const x=subs.find(y=>y.id===b.dataset.delsub); if(x&&confirm("Remover o item?"))removeSub(x.id);
+  }));
   const nb=d.querySelector("#noteBox");
   const post=()=>{const v=nb.value.trim();if(!v)return;nb.value="";addNote(t.id,v);};
   bind("#addNote","click",post);
@@ -559,6 +605,7 @@ FF.start("juridico", async function(){
     .on("postgres_changes",{event:"*",schema:"public",table:"tarefas"},scheduleReload)
     .on("postgres_changes",{event:"*",schema:"public",table:"anotacoes"},scheduleReload)
     .on("postgres_changes",{event:"*",schema:"public",table:"anexos"},scheduleReload)
+    .on("postgres_changes",{event:"*",schema:"public",table:"subtarefas"},scheduleReload)
     .subscribe();
   document.addEventListener("visibilitychange",()=>{if(!document.hidden)scheduleReload();});
 });

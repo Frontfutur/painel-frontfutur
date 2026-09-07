@@ -198,7 +198,7 @@ main{flex:1;padding:6px 22px 60px;min-height:0}
 .item-main h3{margin:0;font-family:var(--display);font-weight:500;font-size:15px;line-height:1.35;letter-spacing:-.005em;cursor:pointer;text-wrap:balance}
 .item-main h3:hover{color:var(--violet)}
 .item.done .item-main h3{color:var(--fg-46);text-decoration:line-through}
-.item-main p{margin:0;font-size:13.5px;line-height:1.6;color:var(--fg-72);max-width:70ch}
+.item-main p{margin:0;font-size:13.5px;line-height:1.6;color:var(--fg-72);max-width:70ch;white-space:pre-line}
 .item.done .item-main p{color:var(--fg-30)}
 .item-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;font-family:var(--mono);font-size:10.5px;color:var(--fg-46);margin-top:3px}
 .item-meta svg{width:12px;height:12px;flex:none}
@@ -320,3 +320,21 @@ a.mod:hover{border-color:var(--violet)}
 #gateBody{display:flex;flex-direction:column;gap:8px}
 a.mark{text-decoration:none;color:inherit;transition:color .15s}
 a.mark:hover{color:var(--violet)}
+
+/* ---------- checklist dentro da tarefa ---------- */
+.check{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line)}
+.check:last-of-type{border-bottom:0}
+.check .box{width:17px;height:17px;border:1.5px solid var(--line-2);border-radius:3px;flex:none;margin-top:2px;display:flex;align-items:center;justify-content:center;color:transparent;transition:.15s;background:var(--panel-2)}
+.check .box svg{width:11px;height:11px}
+.check .box:hover{border-color:var(--green);color:var(--line-2)}
+.check .box[aria-pressed="true"]{background:var(--green);border-color:var(--green);color:#fff}
+.check .txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.check .txt b{font-weight:500;font-size:13px;line-height:1.45;color:var(--fg)}
+.check .txt span{font-size:12px;color:var(--fg-46);line-height:1.55}
+.check.feita .txt b{text-decoration:line-through;color:var(--fg-46)}
+.check.feita .txt span{color:var(--fg-30)}
+.check .rm{font-family:var(--mono);font-size:9px;color:var(--fg-30);flex:none;opacity:0;transition:.15s;padding-top:3px}
+.check:hover .rm,.check .rm:focus-visible{opacity:1}
+.check .rm:hover{color:var(--coral)}
+.subadd{display:flex;gap:8px;margin-top:6px}
+.subadd .inp{flex:1}
