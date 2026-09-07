@@ -11,7 +11,7 @@ const FRENTES=[
  {id:"f2",code:"F2",name:"Base de prestadores",color:"var(--f2)"},
  {id:"f3",code:"F3",name:"Cliente",color:"var(--f3)"},
  {id:"f4",code:"F4",name:"Estrutura da empresa",color:"var(--f4)"},
- {id:"f5",code:"F5",name:"Remuneração e RH",color:"var(--f5)"}
+ {id:"f5",code:"F5",name:"Time e remuneração",color:"var(--f5)"}
 ];
 const STATUSES=[
  {id:"todo",label:"A fazer",raw:"#b1adc2"},

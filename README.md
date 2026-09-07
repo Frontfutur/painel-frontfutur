@@ -17,11 +17,19 @@ Ref do projeto: `wvnagofjhkqgenzukprc`.
 - [x] Tabelas, travas de acesso (RLS), tempo real e bucket `anexos` — criados
 - [x] 34 tarefas carregadas em `tarefas`
 - [x] `config.js` preenchido com a URL e a chave publishable
-- [ ] `sql/03-pessoas.sql` — falta preencher os e-mails e rodar
-- [ ] Usuários em **Authentication → Users** — falta criar (um por e-mail, com senha, *Auto Confirm User*)
-- [ ] Publicar no GitHub Pages
+- [x] Publicado: **https://frontfutur.github.io/painel-frontfutur/**
+- [x] Repositório: https://github.com/Frontfutur/painel-frontfutur (público)
+- [x] Usuário da Ana criado em *Authentication* e testado
+- [x] Raquel Mantovani liberada na tabela `pessoas` (módulo juridico)
+- [x] Quadro reorganizado em 5 frentes no código (`juridico.js` + `estilo.css`)
+- [ ] `sql/04-reorganizacao.sql` — 3 passos para trocar as 34 tarefas antigas pelas 26 novas
+- [ ] Usuário da Raquel em **Authentication → Users**
+- [ ] E-mails do Jonas, Giovane, Nauan e Danilo em `sql/03-pessoas.sql`
 
-Enquanto não existir usuário em *Authentication*, ninguém consegue entrar — nem você.
+**Como atualizar o site:** o `git` desta máquina está autenticado como
+`anamantovani112-afk`, e o repositório é da conta `Frontfutur` — `git push`
+dá 403. Enquanto isso não for resolvido, subir alterações pelo próprio
+GitHub (**Add file → Upload files**, arrastando os arquivos alterados).
 
 ---
 
