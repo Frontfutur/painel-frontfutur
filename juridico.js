@@ -362,6 +362,11 @@ function itemEl(t){
   return row;
 }
 
+function comoEscrever(n){
+  const nomes=["nenhuma frente","uma frente","duas frentes","três frentes","quatro frentes","cinco frentes","seis frentes"];
+  return nomes[n] || (n+" frentes");
+}
+
 function buildLista(){
   const wrap=el("div","doc");
   const list=visible();
@@ -374,7 +379,7 @@ function buildLista(){
     '<p class="kicker">Frontfutur · pauta jurídica · '+
       new Date().toLocaleDateString("pt-BR",{day:"2-digit",month:"long",year:"numeric"})+"</p>"+
     "<h1>O que tem que ser feito</h1>"+
-    '<p class="lede"><b>'+list.length+" itens</b> em quatro frentes"+
+    '<p class="lede"><b>'+list.length+" itens</b> em "+comoEscrever(FRENTES.filter(f=>list.some(t=>t.frente===f.id)).length)+
       (by.done?", <b>"+by.done+"</b> já concluídos":"")+". "+
       "<b>"+by.doing+"</b> em andamento e <b>"+blocked+"</b> parados esperando alguém destravar. "+
       "Clique no título para abrir o contexto, anotar ou anexar arquivo; clique no círculo para dar como feito.</p>";
