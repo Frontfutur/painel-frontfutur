@@ -504,7 +504,7 @@ function renderDrawer(){
         '<div class="note"><div class="who-line"><b>'+esc(n.author)+"</b>"+
         new Date(n.at).toLocaleDateString("pt-BR",{day:"2-digit",month:"short"})+
         '<button data-deln="'+n.id+'">apagar</button></div><p>'+esc(n.text)+"</p></div>").join(""):'<p class="hint">Sem anotações. Registre aqui o que travou, o que ficou combinado, o que voltou do escritório.</p>')+
-      '<textarea class="inp" id="noteBox" placeholder="Escrever anotação… (Ctrl+Enter para salvar)"></textarea>'+
+      '<textarea class="inp" id="noteBox" placeholder="Comece com seu nome. Ex.: Gi: falei com a Raquel hoje. (Ctrl+Enter salva)"></textarea>'+
       '<button class="btn-ghost" id="addNote" style="align-self:flex-start">Anotar</button>'+
     "</div>"+
 
